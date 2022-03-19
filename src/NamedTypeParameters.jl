@@ -1,9 +1,6 @@
 module NamedTypeParameters
 
 
-using MacroTools
-
-
 export get_type_signature,
        parameterize,
        @parameterize
