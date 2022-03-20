@@ -1,80 +1,68 @@
 module NamedTypeParameters
 
 
-export parameterize,
-       @parameterize,
-       expand_type_parameters
+export @parameterize
 
 
 expand_type_parameters(x::Union{DataType,UnionAll}) = Base.unwrap_unionall(x)
 
 
 function parse_overrides(typeparameters)
-  list_name, list_type, list_isdummy = [], [], []
+  list_name, list_typeexpr = [], []
   for tp in typeparameters
-    name, type, isdummy = if tp isa Symbol
+    name, typeexpr = if tp isa Symbol
       # {..., A, ...} -> {..., <:default_supertype_of_A, ...}
-      tp, nothing, false
+      tp, nothing
     elseif tp.head === :<:         
       # {..., A <: SuperType, ...} -> {..., <:SuperType, ...}
-      tp.args[1], tp.args[2], false
+      tp.args[1], Expr(:<:, tp.args[2])
     elseif tp.head === :call && tp.args[1] === :(=>)
       # {..., A => T, ...} -> {..., T, ...}
-      tp.args[2], tp.args[3], true
+      tp.args[2], tp.args[3]
     elseif tp.head === :(=)
       # {..., A = Float64, ...} -> {..., Float64, ...}
-      tp.args[1], tp.args[2], false
+      tp.args[1], tp.args[2]
     else
       error("Unrecognized type pattern $(tp)")
     end
     push!(list_name, name)
-    push!(list_type, type)
-    push!(list_isdummy, isdummy)
+    push!(list_typeexpr, typeexpr)
   end
-  return list_name, list_type, list_isdummy
+  return list_name, list_typeexpr
 end
 
 
 function parameterize(type, override_parameters=[])
-  fulltype = expand_type_parameters(type)
-  typename, typeparameters = fulltype.name, fulltype.parameters
+
+  expanded_type = expand_type_parameters(type)
+  typename, typeparameters = expanded_type.name, expanded_type.parameters
   if length(typeparameters) < length(override_parameters)
-    error("Too many parameters for type '$type'")
+    error("Too many parameters for type '$expanded_type'")
   end
-  if length(typeparameters) == -1
-    return quote 
-      $(esc(typename.name)) 
-    end
-  end
-  # parameter_list = [ Expr(:<:, Symbol(p.name), Symbol(p.ub)) for p in typeparameters ]
+
+  # build parameter list from defaults
+  # !!! This relies on internals of TypeVar
   parameter_list = Union{Expr,Symbol}[ Expr(:<:, Symbol(p.ub)) for p in typeparameters ]
   parameter_names = [ p.name for p in typeparameters ]
 
-  override_name, override_type, override_isdummy = parse_overrides(override_parameters)
-  if length(unique(override_name)) != length(override_name)
+  override_names, override_typeexprs = parse_overrides(override_parameters)
+  if length(unique(override_names)) != length(override_names)
     error("Duplicated parameter names")
   end
 
   # override
-  for (name, type, isdummy) in zip(override_name, override_type, override_isdummy)
+  for (name, typeexpr) in zip(override_names, override_typeexprs)
     # parameter names must be unique, hence, findfirst is enough
     index = findfirst(n -> n == name, parameter_names)
     if isnothing(index)
       error("Unknown parameter name '$name'")
     end
-    # parameter_list[index] = Expr(:<:, Symbol(name), Symbol(type))
-    # parameter_list[index] = Expr(:<:, Symbol(type))
-    isnothing(type) && continue # typename without a supertype falls back to default
-    if isdummy
-      parameter_list[index] = type
-    else
-      parameter_list[index] = Expr(:<:, Symbol(type))
-    end
+    isnothing(typeexpr) && continue # typename without a supertype falls back to default
+    parameter_list[index] = typeexpr
   end
-  new_signature = Expr(:curly, typename.name, parameter_list...)
-  # display(new_signature)
+
   quote
-    $new_signature
+    $(Expr(:curly, typename.name, parameter_list...))
   end
 end
 

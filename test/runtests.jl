@@ -1,5 +1,5 @@
-using Test
 using NamedTypeParameters
+using Test
 
 
 # Test types
@@ -11,6 +11,25 @@ struct SuperTypes1{A<:Real} end
 struct SuperTypes2{A<:Real,B<:Array} end
 struct SuperTypes3{A<:Real,B<:Array,C<:AbstractDict} end
 
+
+@testset begin
+
+
+### Notes on parameter types
+
+
+# specifying a type with <: equals adding an unnamed where parameter, e.g.
+@test SuperTypes1{<:Real} == SuperTypes1{A} where A<:Real
+# note: using invalid where supertypes (invalid wrt the definition of the parameteric type)
+# does not throw
+SuperTypes1{A} where A<:String # works, although SuperTypes1 is defined with A<:Real
+# but inserting an invalid type as a concrete type parameter does throw
+@test_throws TypeError SuperTypes1{String}
+
+
+### Pkg tests
+
+
 # return type itself if no parameters are given
 types = [ NoTypes, 
           AnyTypes1, AnyTypes2, AnyTypes2,
@@ -18,17 +37,6 @@ types = [ NoTypes,
 for t in types
   @test @parameterize(t) == t
 end
-
-
-### Notes parameter types
-
-# specifying a type with <: equals adding an unnamed where parameter with <: Real
-@test SuperTypes1{<:Real} == SuperTypes1{A} where A<:Real
-# note: using invalid where supertypes (invalid wrt the definition of the parameteric type)
-# does not throw
-SuperTypes1{A} where A<:String # works, although SuperTypes1 is defined with A<:Real
-# but inserting an invalid type as a concrete type parameter does throw
-@test_throws TypeError SuperTypes1{String}
 
 
 # using the parameter type name alone inserts its default supertype
@@ -39,6 +47,7 @@ SuperTypes1{A} where A<:String # works, although SuperTypes1 is defined with A<:
 @test @parameterize(SuperTypes2{A,B}) == SuperTypes2{<:Real, <:Array}
 @test @parameterize(SuperTypes3{A,B,C}) == SuperTypes3{<:Real, <:Array, <:AbstractDict}
 
+
 # override type parameter defaults
 @test @parameterize(AnyTypes1{A<:Float64}) == AnyTypes1{<:Float64}
 @test @parameterize(AnyTypes2{A<:Float64,B<:String}) == AnyTypes2{<:Float64,<:String}
@@ -46,6 +55,7 @@ SuperTypes1{A} where A<:String # works, although SuperTypes1 is defined with A<:
 @test @parameterize(SuperTypes1{A<:Float64}) == SuperTypes1{<:Float64}
 @test @parameterize(SuperTypes2{A<:Float64,B<:Vector}) == SuperTypes2{<:Float64,<:Vector}
 @test @parameterize(SuperTypes3{A<:Float64,B<:Vector,C<:Dict}) == SuperTypes3{<:Float64,<:Vector,<:Dict}
+
 
 # skip parameters
 @test @parameterize(AnyTypes2{A<:Float64}) == AnyTypes2{<:Float64,<:Any}
@@ -86,13 +96,13 @@ SuperTypes1{A} where A<:String # works, although SuperTypes1 is defined with A<:
 @test (@parameterize(SuperTypes3{A=>T,B=>S,C=>R}) where {T<:Float64,S<:Vector,R<:Dict}) == SuperTypes3{<:Float64, <:Vector, <:Dict}
 
 
-# # set a parameter type with =
-# @test @parameterize(AnyTypes1{A=Float64}) == AnyTypes1{Float64}
-# @test @parameterize(AnyTypes2{A=Float64,B=String}) == AnyTypes2{Float64,String}
-# @test @parameterize(AnyTypes3{A=Float64,B=String,C=Symbol}) == AnyTypes3{Float64,String,Symbol}
-# @test @parameterize(SuperTypes1{A=Float64}) == SuperTypes1{Float64}
-# @test @parameterize(SuperTypes2{A=Float64,B=Vector}) == SuperTypes2{Float64,Vector}
-# @test @parameterize(SuperTypes3{A=Float64,B=Vector,C=Dict}) == SuperTypes3{Float64,Vector,Dict}
+# set a parameter type with =
+@test @parameterize(AnyTypes1{A=Float64}) == AnyTypes1{Float64}
+@test @parameterize(AnyTypes2{A=Float64,B=String}) == AnyTypes2{Float64,String}
+@test @parameterize(AnyTypes3{A=Float64,B=String,C=Symbol}) == AnyTypes3{Float64,String,Symbol}
+@test @parameterize(SuperTypes1{A=Float64}) == SuperTypes1{Float64}
+@test @parameterize(SuperTypes2{A=Float64,B=Vector}) == SuperTypes2{Float64,Vector}
+@test @parameterize(SuperTypes3{A=Float64,B=Vector,C=Dict}) == SuperTypes3{Float64,Vector,Dict}
 
 
 # duplicated parameter names
@@ -125,3 +135,6 @@ SuperTypes1{A} where A<:String # works, although SuperTypes1 is defined with A<:
 @test_throws LoadError @eval @parameterize(SuperTypes3{X,Y,Z})
 @test_throws LoadError @eval @parameterize(SuperTypes3{A,Y})
 @test_throws LoadError @eval @parameterize(SuperTypes3{A,B,Z})
+
+
+end # testset
