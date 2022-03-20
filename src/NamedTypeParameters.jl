@@ -1,7 +1,8 @@
 module NamedTypeParameters
 
 
-export @parameterize
+export @parameterize,
+       expand_type_parameters
 
 
 expand_type_parameters(x::Union{DataType,UnionAll}) = Base.unwrap_unionall(x)
@@ -34,14 +35,17 @@ end
 
 function parameterize(type, override_parameters=[])
 
+  # !!! This block relies on Base internals
+  # - unwrap_unionall (used in expand_type_parameters)
+  # - TypeName fields :name, :parameters
+  # - TypeVar fields :name, :ub
   expanded_type = expand_type_parameters(type)
   typename, typeparameters = expanded_type.name, expanded_type.parameters
+  display(typeof(typename))
   if length(typeparameters) < length(override_parameters)
     error("Too many parameters for type '$expanded_type'")
   end
-
   # build parameter list from defaults
-  # !!! This relies on internals of TypeVar
   parameter_list = Union{Expr,Symbol}[ Expr(:<:, Symbol(p.ub)) for p in typeparameters ]
   parameter_names = [ p.name for p in typeparameters ]
 
