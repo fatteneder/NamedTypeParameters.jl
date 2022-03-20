@@ -80,7 +80,7 @@ and stop worrying about the order of type parameters.
 julia> struct MyType{A<:Real, B, C, D<:Array, F, G, H} end
 
 julia> @parameterize MyType{C=String, B<:Array, H<:Dict}
-MyType{<:Real, <:Array, String, <:Array, <:Any, <:Any, Dict}
+MyType{<:Real, <:Array, String, <:Array, <:Any, <:Any, <:Dict}
 
 julia> function foo(m::@parameterize(MyType{G=>T,A=>T,C=String})) where T
           # ...
