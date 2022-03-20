@@ -12,6 +12,9 @@ get_type_signature(dt::DataType) = (dt.name, dt.parameters)
 
 function parameterize(type, override_parameters=[])
   typename, typeparameters = get_type_signature(type)
+  if length(typeparameters) < length(override_parameters)
+    error("Requested too many parameters for type $type")
+  end
   if length(typeparameters) == 0
     return quote 
       $(esc(typename.name)) 
@@ -21,6 +24,7 @@ function parameterize(type, override_parameters=[])
   parameter_list = Union{Expr,Symbol}[ Expr(:<:, Symbol(p.ub)) for p in typeparameters ]
   parameter_names = [ p.name for p in typeparameters ]
   # override
+  # TODO Check for duplicates in override_parameters
   for override in override_parameters
     name, type, type_is_dummy = if override isa Symbol
       override, nothing, false
@@ -70,6 +74,9 @@ Here is what happend for each slot:
 (D) We inserted T as a placeholder for a preceeding `where` list.
 """
 macro parameterize(short_signature)
+  if short_signature isa Symbol
+    return esc(short_signature)
+  end
   if short_signature.head !== :curly
     error("Could not recognize a type")
   end
