@@ -29,7 +29,8 @@ function parse_overrides(typeparameters)
     push!(list_name, name)
     push!(list_typeexpr, typeexpr)
   end
-  return list_name, list_typeexpr
+
+  list_name, list_typeexpr
 end
 
 
@@ -41,7 +42,6 @@ function parameterize(type, override_parameters=[])
   # - TypeVar fields :name, :ub
   expanded_type = expand_type_parameters(type)
   typename, typeparameters = expanded_type.name, expanded_type.parameters
-  display(typeof(typename))
   if length(typeparameters) < length(override_parameters)
     error("Too many parameters for type '$expanded_type'")
   end
@@ -65,33 +65,27 @@ function parameterize(type, override_parameters=[])
     parameter_list[index] = typeexpr
   end
 
-  quote
-    $(Expr(:curly, typename.name, parameter_list...))
-  end
+  Expr(:curly, typename.name, parameter_list...)
 end
 
 
 """
-    parameterize(signature)
+Macro which allows to access type parameters of structs by their name,
+ignore certain type parameters in method signatures,
+and stop worrying about the order of type parameters.
 
-===
 # Examples
 
 ```
-struct MyType{A<:Real,B,C,D} end
-@parameterize MyType{D=T, B<:Float64, C}
-```
-transforms into
-```
-MyType{<:Real, <:Float64, <:Any, T}
-```
+julia> struct MyType{A<:Real, B, C, D<:Array, F, G, H} end
 
-Here is what happend for each slot (the order inside @parameterize does not matter)
-- (A) We inserted <:Real, because we did not specify anything for slot A and <:Real is its 
-default supertype (according to the definion of MyType).
-- (B) We inserted <:Float64 as requested.
-- (C) We inserted <:Any, because although it was skipped, no supertype was provided.
-- (D) We inserted T as a placeholder for a preceeding `where` phrase (must be added separately).
+julia> @parameterize MyType{C=String, B<:Array, H<:Dict}
+MyType{<:Real, <:Array, String, <:Array, <:Any, <:Any, Dict}
+
+julia> function foo(m::@parameterize(MyType{G=>T,A=>T,C=String})) where T
+          # ...
+       end
+```
 """
 macro parameterize(signature)
   if signature isa Symbol
@@ -102,7 +96,8 @@ macro parameterize(signature)
   end
   type, override_parameters = signature.args[1], signature.args[2:end]
   type = @eval __module__ $type
-  return esc(parameterize(type, override_parameters))
+
+  esc(parameterize(type, override_parameters))
 end
 
 
