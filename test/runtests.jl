@@ -86,16 +86,6 @@ end
 @test_throws LoadError @eval @parameterize(SuperTypes3{A,B,C,D})
 
 
-# name=dummy inserts the dummy in place of name, to be used with where syntax
-# note that AnyTypes1{<:Any} == AnyTypes1{T} where <: Any
-@test (@parameterize(AnyTypes1{A=>T}) where {T<:Real}) == AnyTypes1{<:Real}
-@test (@parameterize(AnyTypes2{A=>T,B=>S}) where {T<:Real,S<:Array}) == AnyTypes2{<:Real, <:Array}
-@test (@parameterize(AnyTypes3{A=>T,B=>S,C=>R}) where {T<:Real,S<:Array,R<:Symbol}) == AnyTypes3{<:Real, <:Array, <:Symbol}
-@test (@parameterize(SuperTypes1{A=>T}) where {T<:Float64}) == SuperTypes1{<:Float64}
-@test (@parameterize(SuperTypes2{A=>T,B=>S}) where {T<:Float64,S<:Vector}) == SuperTypes2{<:Float64, <:Vector}
-@test (@parameterize(SuperTypes3{A=>T,B=>S,C=>R}) where {T<:Float64,S<:Vector,R<:Dict}) == SuperTypes3{<:Float64, <:Vector, <:Dict}
-
-
 # set a parameter type with =
 @test @parameterize(AnyTypes1{A=Float64}) == AnyTypes1{Float64}
 @test @parameterize(AnyTypes2{A=Float64,B=String}) == AnyTypes2{Float64,String}
@@ -103,6 +93,15 @@ end
 @test @parameterize(SuperTypes1{A=Float64}) == SuperTypes1{Float64}
 @test @parameterize(SuperTypes2{A=Float64,B=Vector}) == SuperTypes2{Float64,Vector}
 @test @parameterize(SuperTypes3{A=Float64,B=Vector,C=Dict}) == SuperTypes3{Float64,Vector,Dict}
+# can also be used with where syntax
+# note that AnyTypes1{<:Any} == AnyTypes1{T} where <: Any
+@test (@parameterize(AnyTypes1{A=T}) where {T<:Real}) == AnyTypes1{<:Real}
+@test (@parameterize(AnyTypes2{A=T,B=S}) where {T<:Real,S<:Array}) == AnyTypes2{<:Real, <:Array}
+@test (@parameterize(AnyTypes3{A=T,B=S,C=R}) where {T<:Real,S<:Array,R<:Symbol}) == AnyTypes3{<:Real, <:Array, <:Symbol}
+@test (@parameterize(SuperTypes1{A=T}) where {T<:Float64}) == SuperTypes1{<:Float64}
+@test (@parameterize(SuperTypes2{A=T,B=S}) where {T<:Float64,S<:Vector}) == SuperTypes2{<:Float64, <:Vector}
+@test (@parameterize(SuperTypes3{A=T,B=S,C=R}) where {T<:Float64,S<:Vector,R<:Dict}) == SuperTypes3{<:Float64, <:Vector, <:Dict}
+
 
 
 # duplicated parameter names

@@ -17,9 +17,6 @@ function parse_overrides(typeparameters)
     elseif tp.head === :<:         
       # {..., A <: SuperType, ...} -> {..., <:SuperType, ...}
       tp.args[1], Expr(:<:, tp.args[2])
-    elseif tp.head === :call && tp.args[1] === :(=>)
-      # {..., A => T, ...} -> {..., T, ...}
-      tp.args[2], tp.args[3]
     elseif tp.head === :(=)
       # {..., A = Float64, ...} -> {..., Float64, ...}
       tp.args[1], tp.args[2]
@@ -77,12 +74,12 @@ and stop worrying about the order of type parameters.
 # Examples
 
 ```
-julia> struct MyType{A<:Real, B, C, D<:Array, F, G, H} end
+julia> struct MyType{A<:Real, B, C, D<:Array, E, F, G} end
 
-julia> @parameterize MyType{C=String, B<:Array, H<:Dict}
+julia> @parameterize MyType{C=String, B<:Array, G<:Dict}
 MyType{<:Real, <:Array, String, <:Array, <:Any, <:Any, <:Dict}
 
-julia> function foo(m::@parameterize(MyType{G=>T,A=>T,C=String})) where T
+julia> function foo(m::@parameterize(MyType{G=T, A=T, C=String})) where T
           # ...
        end
 ```

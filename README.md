@@ -12,12 +12,12 @@ The package was developed and tested with `Julia v1.7.1`.
 # Examples
 
 ```julia
-julia> struct MyType{A<:Real, B, C, D<:Array, F, G, H} end
+julia> struct MyType{A<:Real, B, C, D<:Array, E, F, G} end
 
-julia> @parameterize MyType{C=String, B<:Array, H<:Dict}
+julia> @parameterize MyType{C=String, B<:Array, G<:Dict}
 MyType{<:Real, <:Array, String, <:Array, <:Any, <:Any, <:Dict}
 
-julia> function foo(m::@parameterize(MyType{G=>T,A=>T,C=String})) where T
+julia> function foo(m::@parameterize(MyType{G=T, A=T, C=String})) where T
           # ...
        end
 ```
