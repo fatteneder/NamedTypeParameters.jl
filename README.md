@@ -1,6 +1,6 @@
 # NamedTypeParameters.jl
 
-This package implements a convinience macro `@parameterize` 
+This package implements a convenience macro `@parameterize` 
 which allows to access type parameters of structs by their name,
 ignore certain type parameters in method signatures,
 and stop worrying about the order of type parameters.
